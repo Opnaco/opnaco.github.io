@@ -17,6 +17,9 @@ Google Docs invoices + "did you send it yet?" messages + block-explorer screensh
 - License = tx hash of a ≥29 USDC transfer to the treasury, verified client-side. No backend.
 - Running cost: $0. Gross margin: ~100%. Break-even: first sale.
 
+## Contact
+- Support / business email: opnaco@proton.me (human-held login; recovery phrase backed up offline)
+
 ## Treasury
 - Address (EVM, same on Base/Arbitrum/Optimism/Polygon/Ethereum): `0x3c11b28f0D16d87B7a7347861a4e66EaaFf8E43D`
 - Key: `.treasury/key.json` (local only, gitignored, mode 600). **Back it up offline.**

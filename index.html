@@ -59,10 +59,11 @@
     <details><summary>Where is my invoice stored?</summary><p class="muted">In the link itself (compressed into the URL fragment, which browsers never send to servers) and in your browser's local storage for your history.</p></details>
     <details><summary>How does it detect payment?</summary><p class="muted">Every invoice amount gets a tiny unique fingerprint in its last decimals (e.g. 1,500.003417 USDC). The page asks a public RPC node for USDC transfers to your address since the invoice was created and matches that exact amount.</p></details>
     <details><summary>How does Pro work without an account?</summary><p class="muted">Send 29 USDC to the opnaco treasury from any wallet, then paste the transaction hash. The app verifies it on-chain and unlocks Pro in that browser. Keep the hash — it's your license and works on any device.</p></details>
+    <details><summary>I paid for Pro but lost my tx hash / something went wrong.</summary><p class="muted">Email <a href="mailto:opnaco@proton.me">opnaco@proton.me</a> with the wallet address you paid from and we'll find it on-chain.</p></details>
     <details><summary>Which tokens?</summary><p class="muted">Native USDC (Circle) on Base, Arbitrum, Optimism, Polygon and Ethereum.</p></details>
   </section>
 
-  <footer class="foot">opnaco · open, serverless crypto invoicing · <a href="https://github.com/">source</a></footer>
+  <footer class="foot">opnaco · open, serverless crypto invoicing · Support: <a href="mailto:opnaco@proton.me">opnaco@proton.me</a></footer>
 </div>
 </body>
 </html>
