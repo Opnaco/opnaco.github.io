@@ -33,6 +33,15 @@ Google Docs invoices + "did you send it yet?" messages + block-explorer screensh
 4. **Reinvest first revenue** into a custom domain (~$10/yr) only after the first sales.
 5. Next products on the same engine (no backend): recurring invoices, payroll batch links for DAOs, receipts/tax summaries, a payment-button widget for other sites.
 
+## Distribution log
+| Date | Channel | Status |
+|---|---|---|
+| 2026-10-30 | SEO guides: how-to-invoice-in-usdc, usdc-payment-not-received + sitemap | live |
+| 2026-10-30 | PR PayrollFlow/awesome-freelancer-payments#15 (Invoicing Tools) | open |
+| 2026-10-30 | PR ahmet/awesome-web3#881 (Open Source Project) | open |
+| 2026-10-30 | brandonhimpfen/awesome-stablecoins | skipped: rules exclude early-stage/promotional entries; retry once we have users |
+| 2026-10-30 | Show HN | drafted (drafts/, private); HN account `opnaco` created by the human; post planned for Tue 2026-11-03 ~9am ET |
+
 ## Ledger
 | Date | Item | In (USDC) | Out | Balance |
 |---|---|---|---|---|
