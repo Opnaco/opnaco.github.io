@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>New invoice — opnaco</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=3">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
   .items td input { padding: 6px 8px; }
   .items .q { width: 70px; } .items .p { width: 120px; }
@@ -13,6 +14,9 @@
   section { margin-bottom: 22px; }
   #result { display: none; }
   .hist td { font-size: 14px; }
+  .proPayBox { display: grid; grid-template-columns: 140px 1fr; gap: 14px; align-items: start; }
+  #proQr svg { width: 140px; height: 140px; background: #fff; padding: 6px; border-radius: 8px; }
+  @media (max-width: 520px) { .proPayBox { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -71,8 +75,17 @@
   <h2 style="margin-top:0">opnaco Pro — 29 USDC, lifetime</h2>
   <p class="muted">All networks, your logo, no branding footer, saved clients and CSV export.</p>
   <ol>
-    <li>Send <b>at least 29 USDC</b> on any supported network to the opnaco treasury:<div class="mono notice" style="margin:6px 0">0x3c11b28f0D16d87B7a7347861a4e66EaaFf8E43D</div>
-      <button class="btn sm" id="proPay">Pay 29 USDC with browser wallet</button> <select id="proChain" style="width:auto"></select></li>
+    <li>Pick a network and send <b>29 USDC</b> to the opnaco treasury:
+      <select id="proChain" style="width:auto;display:block;margin:6px 0"></select>
+      <div class="proPayBox">
+        <div id="proQr" title="Scan with a mobile wallet"></div>
+        <div>
+          <div class="mono notice" style="margin:0 0 8px">0x3c11b28f0D16d87B7a7347861a4e66EaaFf8E43D</div>
+          <div class="row"><button class="btn sm" id="proCopyAddr">Copy address</button><button class="btn sm" id="proCopyAmt">Copy amount</button></div>
+          <button class="btn sm primary" id="proPay" style="margin-top:8px">Pay with browser wallet</button>
+          <div class="muted" style="font-size:13px;margin-top:6px">Native USDC on <span id="proChainName">Base</span> only.</div>
+        </div>
+      </div></li>
     <li style="margin-top:12px">Paste the transaction hash to activate (it's also your license on other devices):
       <input id="proTx" class="mono" placeholder="0x…" style="margin-top:6px"></li>
   </ol>
@@ -81,7 +94,7 @@
   <div class="row"><button class="btn primary" id="proVerify">Verify & activate</button><button class="btn" id="proClose">Close</button></div>
 </dialog>
 
-<script src="lib.js"></script>
+<script src="lib.js?v=3"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const fields = ["fn", "fe", "to", "tn", "td", "note"];
@@ -115,7 +128,16 @@ $("tn").addEventListener("change", () => { const c = isPro() && store.get("clien
 $("logo").addEventListener("change", () => {
   if (!isPro()) { $("logo").value = ""; openPro(); return; }
   const f = $("logo").files[0]; if (!f) return;
-  const r = new FileReader(); r.onload = () => store.set("logo", r.result); r.readAsDataURL(f);
+  // Shrink to a small WebP so it fits inside the invoice link itself and the client sees it.
+  const img = new Image();
+  img.onload = () => {
+    const scale = Math.min(1, 240 / img.width, 72 / img.height), cv = document.createElement("canvas");
+    cv.width = Math.round(img.width * scale); cv.height = Math.round(img.height * scale);
+    cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+    store.set("logo", cv.toDataURL("image/webp", 0.8));
+    URL.revokeObjectURL(img.src);
+  };
+  img.src = URL.createObjectURL(f);
 });
 
 function nextNumber() { return "INV-" + String((store.get("history", []).length || 0) + 1).padStart(4, "0"); }
@@ -138,6 +160,7 @@ $("create").onclick = async () => {
   if (!isPro() && !CHAINS[inv.chain].free) return openPro();
   inv.tag = 1 + Math.floor(Math.random() * 9998);
   inv.p = isPro() ? 1 : 0;
+  if (inv.p && store.get("logo")) inv.lg = store.get("logo");
   $("create").disabled = true; $("create").textContent = "Creating…";
   try { inv.block = await blockNumber(inv.chain); } catch { /* falls back to a recent window when checking */ }
   const link = new URL("pay.html#" + (await encodeInvoice(inv)), location.href).href;
@@ -165,7 +188,7 @@ $("refresh").onclick = async () => {
   for (const row of h) {
     if (row.status === "paid") continue;
     row.status = "checking…"; renderHistory();
-    try { const p = await findPayment(row.inv); row.status = p ? "paid" : "unpaid"; if (p) row.tx = p.tx; } catch { row.status = "unpaid"; }
+    try { const p = await findPayment(row.inv); row.status = p ? "paid" : "unpaid"; if (p) row.tx = p.tx; } catch { row.status = "couldn't check"; }
     store.set("history", h); renderHistory();
   }
   $("refresh").disabled = false;
@@ -182,13 +205,28 @@ $("csv").onclick = () => {
 function openPro() {
   $("proChain").innerHTML = Object.entries(CHAINS).map(([k, c]) => `<option value="${k}">${c.name}</option>`).join("");
   $("proErr").textContent = ""; $("proOk").textContent = isPro() ? "Pro is active in this browser. Thank you!" : "";
+  renderProQr();
   $("proDlg").showModal();
 }
+const PRO_UNITS = BigInt(PRO_PRICE) * 1000000n;
+function renderProQr() {
+  const chain = $("proChain").value;
+  $("proChainName").textContent = CHAINS[chain].name;
+  try { const q = qrcode(0, "M"); q.addData(eip681(chain, TREASURY, PRO_UNITS)); q.make(); $("proQr").innerHTML = `<a href="${eip681(chain, TREASURY, PRO_UNITS)}" title="Open in wallet app">${q.createSvgTag({ scalable: true, margin: 2 })}</a>`; }
+  catch { $("proQr").innerHTML = `<p class="muted" style="font-size:13px">QR code unavailable — copy the address and amount instead.</p>`; }
+}
+$("proChain").addEventListener("change", renderProQr);
+async function copyBtn(btn, text, label) {
+  try { await navigator.clipboard.writeText(text); btn.textContent = "Copied ✓"; } catch { btn.textContent = "Copy failed"; }
+  setTimeout(() => (btn.textContent = label), 1500);
+}
+$("proCopyAddr").onclick = () => copyBtn($("proCopyAddr"), TREASURY, "Copy address");
+$("proCopyAmt").onclick = () => copyBtn($("proCopyAmt"), String(PRO_PRICE), "Copy amount");
 $("proLink").onclick = (e) => { e.preventDefault(); openPro(); };
 $("proClose").onclick = () => $("proDlg").close();
 $("proPay").onclick = async () => {
   $("proErr").textContent = "";
-  try { const hash = await payWithWallet($("proChain").value, TREASURY, BigInt(PRO_PRICE) * 1000000n); $("proTx").value = hash; $("proOk").textContent = "Sent! Waiting for confirmation, then press Verify."; }
+  try { const hash = await payWithWallet($("proChain").value, TREASURY, PRO_UNITS); $("proTx").value = hash; $("proOk").textContent = "Sent! Waiting for confirmation, then press Verify."; }
   catch (e) { $("proErr").textContent = e.message || String(e); }
 };
 $("proVerify").onclick = async () => {

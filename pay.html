@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Invoice — opnaco</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=3">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
   .inv { max-width: 820px; margin: 10px auto 0; }
@@ -25,7 +25,7 @@
   <div class="card inv" id="inv"><p class="muted">Loading invoice…</p></div>
   <footer class="foot" id="brand" style="text-align:center">Made with <a href="./">opnaco</a> — free crypto invoices that know when they're paid.</footer>
 </div>
-<script src="lib.js"></script>
+<script src="lib.js?v=3"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 let inv, units;
@@ -36,7 +36,7 @@ async function main() {
   const c = CHAINS[inv.chain];
   document.title = `Invoice ${inv.n} from ${inv.fn || "opnaco"}`;
   if (inv.p) $("brand").style.display = "none";
-  const logo = inv.p && store.get("profile", {}).to === inv.to && store.get("logo");
+  const logo = inv.p && /^data:image\/(webp|png|jpeg);base64,/.test(inv.lg || "") && inv.lg;
   $("inv").innerHTML = `
     <div class="head"><div><img id="logo" alt=""><h1>Invoice ${esc(inv.n)}</h1><div class="muted">Issued ${esc(inv.d)}${inv.due ? " · Due " + esc(inv.due) : ""}</div></div>
       <div style="text-align:right"><span id="status" class="pill warn">Checking payment…</span></div></div>
@@ -57,17 +57,26 @@ async function main() {
       </div>
     </div>`;
   if (logo) { $("logo").src = logo; $("logo").style.display = "block"; }
-  try { const q = qrcode(0, "M"); q.addData(eip681(inv.chain, inv.to, units)); q.make(); $("qr").innerHTML = q.createSvgTag({ scalable: true, margin: 2 }); } catch {}
+  // QR doubles as a tap-to-open link for mobile wallets.
+  try { const q = qrcode(0, "M"); q.addData(eip681(inv.chain, inv.to, units)); q.make(); $("qr").innerHTML = `<a href="${eip681(inv.chain, inv.to, units)}" title="Open in wallet app">${q.createSvgTag({ scalable: true, margin: 2 })}</a>`; }
+  catch { $("qr").innerHTML = `<p class="muted">QR code unavailable — copy the amount and address instead.</p>`; }
   const amt = (Number(units) / 1e6).toFixed(6);
-  $("copyAmt").onclick = () => navigator.clipboard.writeText(amt);
-  $("copyAddr").onclick = () => navigator.clipboard.writeText(inv.to);
+  const copy = async (btn, text) => { const label = btn.textContent; try { await navigator.clipboard.writeText(text); btn.textContent = "Copied ✓"; } catch { btn.textContent = "Copy failed"; } setTimeout(() => (btn.textContent = label), 1500); };
+  $("copyAmt").onclick = () => copy($("copyAmt"), amt);
+  $("copyAddr").onclick = () => copy($("copyAddr"), inv.to);
   $("wallet").onclick = async () => {
     $("err").textContent = "";
-    try { const h = await payWithWallet(inv.chain, inv.to, units); $("progress").innerHTML = `Sent: <a target="_blank" href="${c.explorer}/tx/${h}">${short(h)}</a>. Confirming…`; setTimeout(check, 6000); }
+    try { const h = await payWithWallet(inv.chain, inv.to, units); $("progress").innerHTML = `Sent: <a target="_blank" href="${c.explorer}/tx/${h}">${short(h)}</a>. Confirming…`; waitForPayment(); }
     catch (e) { $("err").textContent = e.message || String(e); }
   };
   $("check").onclick = check;
   check();
+}
+
+// After a wallet send, keep checking for ~2 minutes until the transfer is mined.
+async function waitForPayment(tries = 12) {
+  await new Promise((r) => setTimeout(r, 8000));
+  if (!(await check()) && tries > 1) waitForPayment(tries - 1);
 }
 
 async function check() {
@@ -78,8 +87,11 @@ async function check() {
     if (p) {
       $("status").className = "pill ok"; $("status").innerHTML = `Paid ✓`;
       $("payBox").innerHTML = `<div style="grid-column:1/-1" class="notice"><b>Paid in full.</b> ${fmtUnits(units)} USDC from <span class="mono">${short(p.from)}</span> in block ${p.block.toLocaleString()} — <a target="_blank" href="${CHAINS[inv.chain].explorer}/tx/${p.tx}">view transaction</a>.</div>`;
-    } else { $("status").textContent = "Unpaid"; }
+      return true;
+    }
+    $("status").textContent = "Unpaid";
   } catch (e) { $("status").textContent = "Status unavailable"; $("err").textContent = "Couldn't reach the network: " + (e.message || e); }
+  return false;
 }
 main();
 </script>

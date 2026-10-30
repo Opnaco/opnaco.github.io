@@ -6,13 +6,14 @@ const TREASURY = "0x3c11b28f0D16d87B7a7347861a4e66EaaFf8E43D";
 const PRO_PRICE = 29; // USDC, one-time
 const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 
-// span = max blocks per eth_getLogs request the RPC tolerates
+// Free, CORS-enabled RPCs that serve historical logs (probed 2026-10-30; many public RPCs
+// refuse old logs as "archive requests"). span = max blocks per eth_getLogs the RPC accepts.
 const CHAINS = {
-  base:     { id: 8453,  name: "Base",     usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", rpcs: ["https://base-rpc.publicnode.com", "https://mainnet.base.org"], span: 50000, explorer: "https://basescan.org", free: true },
-  arbitrum: { id: 42161, name: "Arbitrum", usdc: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", rpcs: ["https://arbitrum-one-rpc.publicnode.com"], span: 50000, explorer: "https://arbiscan.io" },
-  optimism: { id: 10,    name: "Optimism", usdc: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85", rpcs: ["https://optimism-rpc.publicnode.com"], span: 50000, explorer: "https://optimistic.etherscan.io" },
-  polygon:  { id: 137,   name: "Polygon",  usdc: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359", rpcs: ["https://polygon-bor-rpc.publicnode.com"], span: 20000, explorer: "https://polygonscan.com" },
-  ethereum: { id: 1,     name: "Ethereum", usdc: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", rpcs: ["https://ethereum-rpc.publicnode.com"], span: 10000, explorer: "https://etherscan.io" },
+  base:     { id: 8453,  name: "Base",     usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", rpcs: ["https://base-rpc.publicnode.com", "https://mainnet.base.org"], span: 50000, explorer: "https://basescan.org", native: "ETH", free: true },
+  arbitrum: { id: 42161, name: "Arbitrum", usdc: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", rpcs: ["https://arb1.arbitrum.io/rpc"], span: 100000, explorer: "https://arbiscan.io", native: "ETH" },
+  optimism: { id: 10,    name: "Optimism", usdc: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85", rpcs: ["https://mainnet.optimism.io"], span: 10000, explorer: "https://optimistic.etherscan.io", native: "ETH" },
+  polygon:  { id: 137,   name: "Polygon",  usdc: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359", rpcs: ["https://polygon-bor-rpc.publicnode.com"], span: 10000, explorer: "https://polygonscan.com", native: "POL" },
+  ethereum: { id: 1,     name: "Ethereum", usdc: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", rpcs: ["https://gateway.tenderly.co/public/mainnet", "https://rpc.mevblocker.io"], span: 50000, explorer: "https://etherscan.io", native: "ETH" },
 };
 
 // ---------- RPC ----------
@@ -53,18 +54,29 @@ function invoiceUnits(inv) { return toUnits(invoiceTotal(inv).toFixed(2), inv.ta
 
 // ---------- Payment detection ----------
 // Scans USDC Transfer logs to the recipient from the block recorded at invoice creation.
+// Scans the whole range (no cap), PARALLEL chunks at a time. A failing chunk (timeout,
+// too many results, rate limit) is retried as two halves, down to small ranges.
 async function findPayment(inv, onProgress) {
-  const c = CHAINS[inv.chain], want = invoiceUnits(inv);
+  const c = CHAINS[inv.chain], want = invoiceUnits(inv), PARALLEL = 4;
   const latest = await blockNumber(inv.chain);
-  let from = inv.block || latest - c.span * 4;
-  const maxChunks = 60;
-  for (let i = 0; from <= latest && i < maxChunks; i++) {
-    const to = Math.min(from + c.span - 1, latest);
-    onProgress && onProgress(from, to, latest);
-    const logs = await rpc(inv.chain, "eth_getLogs", [{ fromBlock: "0x" + from.toString(16), toBlock: "0x" + to.toString(16), address: c.usdc, topics: [TRANSFER_TOPIC, null, pad32(inv.to)] }]);
-    const hit = logs.find((l) => BigInt(l.data) === want);
+  const start = inv.block || latest - c.span * 4;
+  const chunks = [];
+  for (let f = start; f <= latest; f += c.span) chunks.push([f, Math.min(f + c.span - 1, latest)]);
+  const scan = async ([from, to]) => {
+    const q = [{ fromBlock: "0x" + from.toString(16), toBlock: "0x" + to.toString(16), address: c.usdc, topics: [TRANSFER_TOPIC, null, pad32(inv.to)] }];
+    try { return (await rpc(inv.chain, "eth_getLogs", q)).find((l) => BigInt(l.data) === want); }
+    catch (e) {
+      if (to - from < 2000) throw e;
+      await new Promise((r) => setTimeout(r, 800));
+      const mid = from + Math.floor((to - from) / 2);
+      return (await scan([from, mid])) || (await scan([mid + 1, to]));
+    }
+  };
+  for (let i = 0; i < chunks.length; i += PARALLEL) {
+    const batch = chunks.slice(i, i + PARALLEL);
+    onProgress && onProgress(batch[0][0], batch[batch.length - 1][1], latest);
+    const hit = (await Promise.all(batch.map(scan))).find(Boolean);
     if (hit) return { tx: hit.transactionHash, block: parseInt(hit.blockNumber, 16), from: "0x" + hit.topics[1].slice(26) };
-    from = to + 1;
   }
   return null;
 }
@@ -79,7 +91,13 @@ async function payWithWallet(chainKey, to, units) {
   const c = CHAINS[chainKey];
   const [account] = await eth.request({ method: "eth_requestAccounts" });
   const hex = "0x" + c.id.toString(16);
-  if ((await eth.request({ method: "eth_chainId" })) !== hex) await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: hex }] });
+  if ((await eth.request({ method: "eth_chainId" })) !== hex) {
+    try { await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: hex }] }); }
+    catch (e) {
+      if (e.code !== 4902) throw e; // 4902: wallet doesn't know this network yet
+      await eth.request({ method: "wallet_addEthereumChain", params: [{ chainId: hex, chainName: c.name, rpcUrls: [c.rpcs[0]], blockExplorerUrls: [c.explorer], nativeCurrency: { name: c.native, symbol: c.native, decimals: 18 } }] });
+    }
+  }
   return eth.request({ method: "eth_sendTransaction", params: [{ from: account, to: c.usdc, data: transferData(to, units) }] });
 }
 function eip681(chainKey, to, units) { const c = CHAINS[chainKey]; return `ethereum:${c.usdc}@${c.id}/transfer?address=${to}&uint256=${units}`; }
