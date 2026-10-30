@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>New invoice — opnaco</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .items td input { padding: 6px 8px; }
+  .items .q { width: 70px; } .items .p { width: 120px; }
+  .total { font-size: 22px; font-weight: 800; text-align: right; margin-top: 10px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .lock { font-size: 12px; color: var(--muted); font-weight: 500; }
+  section { margin-bottom: 22px; }
+  #result { display: none; }
+  .hist td { font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><a class="logo" href="./">opna<span>co</span></a><nav><span id="planBadge" class="pill">Free</span><a href="#" id="proLink">Get Pro</a></nav></header>
+
+  <section class="card">
+    <h2 style="margin-top:0">New invoice</h2>
+    <div class="grid2">
+      <div>
+        <h3 style="margin:0">From</h3>
+        <label>Your name / business</label><input id="fn" placeholder="Jane Doe Design">
+        <label>Your details (email, address, tax ID…)</label><textarea id="fe"></textarea>
+        <label>Receive at (your wallet address)</label><input id="to" class="mono" placeholder="0x…">
+        <label>Network <span class="lock" id="chainLock">· more networks with Pro</span></label><select id="chain"></select>
+        <label>Your logo <span class="lock">· Pro</span></label><input type="file" id="logo" accept="image/*">
+      </div>
+      <div>
+        <h3 style="margin:0">Bill to</h3>
+        <label>Client name <span class="lock">· saved clients with Pro</span></label><input id="tn" list="clients" placeholder="Acme DAO"><datalist id="clients"></datalist>
+        <label>Client details</label><textarea id="td"></textarea>
+        <div class="grid2" style="gap:10px">
+          <div><label>Invoice #</label><input id="n"></div>
+          <div><label>Due date</label><input id="due" type="date"></div>
+        </div>
+        <label>Notes / terms</label><textarea id="note" placeholder="Thank you for your business!"></textarea>
+      </div>
+    </div>
+
+    <h3>Line items</h3>
+    <table class="items"><thead><tr><th>Description</th><th>Qty</th><th>Price (USDC)</th><th class="num">Amount</th><th></th></tr></thead><tbody id="items"></tbody></table>
+    <button class="btn sm" id="addItem" style="margin-top:8px">+ Add item</button>
+    <div class="total">Total: <span id="total">0.00</span> USDC</div>
+    <p class="err" id="formErr"></p>
+    <div class="row"><button class="btn primary" id="create">Create invoice link</button></div>
+  </section>
+
+  <section class="card" id="result">
+    <h3 style="margin-top:0">Invoice ready <span class="pill ok">saved to history</span></h3>
+    <p class="muted">Send this link to your client. It opens the invoice with a pay button and confirms payment on-chain automatically.</p>
+    <input id="link" class="mono" readonly>
+    <div class="row" style="margin-top:10px"><button class="btn primary" id="copy">Copy link</button><a class="btn" id="open" target="_blank">Open / print</a><button class="btn" id="again">New invoice</button></div>
+  </section>
+
+  <section class="card">
+    <div class="row" style="justify-content:space-between"><h3 style="margin:0">History</h3>
+      <div class="row"><button class="btn sm" id="refresh">Check payments</button><button class="btn sm" id="csv">Export CSV <span class="lock">Pro</span></button></div></div>
+    <table class="hist"><thead><tr><th>#</th><th>Client</th><th>Network</th><th class="num">Amount</th><th>Status</th><th></th></tr></thead><tbody id="hist"></tbody></table>
+    <p class="muted" id="histEmpty">No invoices yet.</p>
+  </section>
+
+  <footer class="foot">Everything on this page stays in your browser.</footer>
+</div>
+
+<dialog id="proDlg">
+  <h2 style="margin-top:0">opnaco Pro — 29 USDC, lifetime</h2>
+  <p class="muted">All networks, your logo, no branding footer, saved clients and CSV export.</p>
+  <ol>
+    <li>Send <b>at least 29 USDC</b> on any supported network to the opnaco treasury:<div class="mono notice" style="margin:6px 0">0x3c11b28f0D16d87B7a7347861a4e66EaaFf8E43D</div>
+      <button class="btn sm" id="proPay">Pay 29 USDC with browser wallet</button> <select id="proChain" style="width:auto"></select></li>
+    <li style="margin-top:12px">Paste the transaction hash to activate (it's also your license on other devices):
+      <input id="proTx" class="mono" placeholder="0x…" style="margin-top:6px"></li>
+  </ol>
+  <p class="err" id="proErr"></p><p id="proOk" style="color:var(--ok)"></p>
+  <div class="row"><button class="btn primary" id="proVerify">Verify & activate</button><button class="btn" id="proClose">Close</button></div>
+</dialog>
+
+<script src="lib.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const fields = ["fn", "fe", "to", "tn", "td", "note"];
+let items = [{ d: "", q: 1, p: "" }];
+
+function refreshPlan() {
+  const pro = isPro();
+  $("planBadge").textContent = pro ? "Pro" : "Free";
+  $("proLink").style.display = pro ? "none" : "";
+  $("chainLock").style.display = pro ? "none" : "";
+  $("chain").innerHTML = Object.entries(CHAINS).map(([k, c]) => `<option value="${k}" ${!pro && !c.free ? "disabled" : ""}>${c.name} — USDC${!pro && !c.free ? " (Pro)" : ""}</option>`).join("");
+  $("chain").value = store.get("profile", {}).chain && (pro || CHAINS[store.get("profile", {}).chain].free) ? store.get("profile").chain : "base";
+  $("clients").innerHTML = pro ? Object.keys(store.get("clients", {})).map((n) => `<option value="${esc(n)}">`).join("") : "";
+}
+
+function renderItems() {
+  $("items").innerHTML = items.map((it, i) => `<tr>
+    <td><input data-i="${i}" data-k="d" value="${esc(it.d)}" placeholder="Design work"></td>
+    <td><input class="q" data-i="${i}" data-k="q" type="number" min="0" step="any" value="${esc(it.q)}"></td>
+    <td><input class="p" data-i="${i}" data-k="p" type="number" min="0" step="0.01" value="${esc(it.p)}"></td>
+    <td class="num">${fmtMoney((+it.q || 0) * (+it.p || 0))}</td>
+    <td>${items.length > 1 ? `<button class="btn sm" data-del="${i}">✕</button>` : ""}</td></tr>`).join("");
+  $("total").textContent = fmtMoney(invoiceTotal({ items }));
+}
+$("items").addEventListener("input", (e) => { const t = e.target; if (t.dataset.k) { items[t.dataset.i][t.dataset.k] = t.value; const row = t.closest("tr"); row.cells[3].textContent = fmtMoney((+items[t.dataset.i].q || 0) * (+items[t.dataset.i].p || 0)); $("total").textContent = fmtMoney(invoiceTotal({ items })); } });
+$("items").addEventListener("click", (e) => { if (e.target.dataset.del) { items.splice(+e.target.dataset.del, 1); renderItems(); } });
+$("addItem").onclick = () => { items.push({ d: "", q: 1, p: "" }); renderItems(); };
+
+$("tn").addEventListener("change", () => { const c = isPro() && store.get("clients", {})[$("tn").value]; if (c) $("td").value = c; });
+
+$("logo").addEventListener("change", () => {
+  if (!isPro()) { $("logo").value = ""; openPro(); return; }
+  const f = $("logo").files[0]; if (!f) return;
+  const r = new FileReader(); r.onload = () => store.set("logo", r.result); r.readAsDataURL(f);
+});
+
+function nextNumber() { return "INV-" + String((store.get("history", []).length || 0) + 1).padStart(4, "0"); }
+function resetForm() {
+  const p = store.get("profile", {});
+  ["fn", "fe", "to"].forEach((k) => ($(k).value = p[k] || ""));
+  ["tn", "td", "note"].forEach((k) => ($(k).value = ""));
+  $("n").value = nextNumber();
+  $("due").value = new Date(Date.now() + 14 * 864e5).toISOString().slice(0, 10);
+  items = [{ d: "", q: 1, p: "" }]; renderItems();
+  $("result").style.display = "none";
+}
+
+$("create").onclick = async () => {
+  $("formErr").textContent = "";
+  const inv = { v: 1, n: $("n").value.trim(), d: new Date().toISOString().slice(0, 10), due: $("due").value, chain: $("chain").value, items: items.filter((i) => i.d || +i.p).map((i) => ({ d: i.d, q: +i.q || 0, p: +i.p || 0 })) };
+  fields.forEach((k) => (inv[k] = $(k).value.trim()));
+  if (!isAddress(inv.to)) return ($("formErr").textContent = "Enter a valid 0x wallet address to receive payment.");
+  if (!(invoiceTotal(inv) > 0)) return ($("formErr").textContent = "Add at least one line item with a price.");
+  if (!isPro() && !CHAINS[inv.chain].free) return openPro();
+  inv.tag = 1 + Math.floor(Math.random() * 9998);
+  inv.p = isPro() ? 1 : 0;
+  $("create").disabled = true; $("create").textContent = "Creating…";
+  try { inv.block = await blockNumber(inv.chain); } catch { /* falls back to a recent window when checking */ }
+  const link = new URL("pay.html#" + (await encodeInvoice(inv)), location.href).href;
+  store.set("profile", { fn: inv.fn, fe: inv.fe, to: inv.to, chain: inv.chain });
+  if (isPro() && inv.tn) { const c = store.get("clients", {}); c[inv.tn] = inv.td; store.set("clients", c); }
+  const h = store.get("history", []); h.unshift({ inv, link, status: "unpaid" }); store.set("history", h);
+  $("link").value = link; $("open").href = link; $("result").style.display = "block";
+  $("create").disabled = false; $("create").textContent = "Create invoice link";
+  renderHistory(); refreshPlan();
+  $("result").scrollIntoView({ behavior: "smooth" });
+};
+$("copy").onclick = async () => { try { await navigator.clipboard.writeText($("link").value); $("copy").textContent = "Copied ✓"; } catch { $("link").select(); } setTimeout(() => ($("copy").textContent = "Copy link"), 1500); };
+$("again").onclick = () => { resetForm(); scrollTo({ top: 0, behavior: "smooth" }); };
+
+function renderHistory() {
+  const h = store.get("history", []);
+  $("histEmpty").style.display = h.length ? "none" : "";
+  $("hist").innerHTML = h.map(({ inv, link, status, tx }) => `<tr>
+    <td>${esc(inv.n)}</td><td>${esc(inv.tn || "—")}</td><td>${CHAINS[inv.chain].name}</td><td class="num">${fmtUnits(invoiceUnits(inv))}</td>
+    <td>${status === "paid" ? `<a class="pill ok" target="_blank" href="${CHAINS[inv.chain].explorer}/tx/${tx}">Paid</a>` : `<span class="pill warn">${esc(status)}</span>`}</td>
+    <td><a href="${esc(link)}" target="_blank">open</a></td></tr>`).join("");
+}
+$("refresh").onclick = async () => {
+  const h = store.get("history", []); $("refresh").disabled = true;
+  for (const row of h) {
+    if (row.status === "paid") continue;
+    row.status = "checking…"; renderHistory();
+    try { const p = await findPayment(row.inv); row.status = p ? "paid" : "unpaid"; if (p) row.tx = p.tx; } catch { row.status = "unpaid"; }
+    store.set("history", h); renderHistory();
+  }
+  $("refresh").disabled = false;
+};
+$("csv").onclick = () => {
+  if (!isPro()) return openPro();
+  const rows = [["number", "issued", "due", "client", "network", "amount_usdc", "status", "tx", "link"]].concat(
+    store.get("history", []).map(({ inv, status, tx, link }) => [inv.n, inv.d, inv.due, inv.tn, CHAINS[inv.chain].name, fmtUnits(invoiceUnits(inv)).replace(/,/g, ""), status, tx || "", link]));
+  const csv = rows.map((r) => r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = "opnaco-invoices.csv"; a.click();
+};
+
+// ----- Pro -----
+function openPro() {
+  $("proChain").innerHTML = Object.entries(CHAINS).map(([k, c]) => `<option value="${k}">${c.name}</option>`).join("");
+  $("proErr").textContent = ""; $("proOk").textContent = isPro() ? "Pro is active in this browser. Thank you!" : "";
+  $("proDlg").showModal();
+}
+$("proLink").onclick = (e) => { e.preventDefault(); openPro(); };
+$("proClose").onclick = () => $("proDlg").close();
+$("proPay").onclick = async () => {
+  $("proErr").textContent = "";
+  try { const hash = await payWithWallet($("proChain").value, TREASURY, BigInt(PRO_PRICE) * 1000000n); $("proTx").value = hash; $("proOk").textContent = "Sent! Waiting for confirmation, then press Verify."; }
+  catch (e) { $("proErr").textContent = e.message || String(e); }
+};
+$("proVerify").onclick = async () => {
+  $("proErr").textContent = ""; $("proOk").textContent = "Verifying on-chain…";
+  try { await verifyLicenseTx($("proChain").value, $("proTx").value.trim()); $("proOk").textContent = "Pro activated. Keep your tx hash as your license."; refreshPlan(); }
+  catch (e) { $("proOk").textContent = ""; $("proErr").textContent = e.message || String(e); }
+};
+
+refreshPlan(); resetForm(); renderHistory();
+if (location.hash === "#pro") openPro();
+</script>
+</body>
+</html>

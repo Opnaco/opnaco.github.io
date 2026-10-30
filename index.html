@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>opnaco Invoice — crypto invoices that know when they're paid</title>
+<meta name="description" content="Free USDC invoice generator for freelancers and DAOs. Share a link, get paid on Base, Arbitrum, Optimism, Polygon or Ethereum, and see payment confirmed on-chain automatically. No signup, no server, no fees.">
+<link rel="stylesheet" href="style.css">
+<style>
+  .hero { padding: 56px 0 40px; }
+  .hero h1 { font-size: clamp(32px, 6vw, 54px); line-height: 1.05; letter-spacing: -0.03em; margin: 0 0 16px; max-width: 760px; }
+  .hero p { font-size: 19px; color: var(--muted); max-width: 640px; margin: 0 0 26px; }
+  .feats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 30px 0 60px; }
+  .feats h3 { margin: 0 0 6px; font-size: 17px; }
+  .feats p { margin: 0; color: var(--muted); font-size: 15px; }
+  .plans { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .plans ul { padding-left: 18px; margin: 12px 0 20px; } .plans li { margin: 4px 0; }
+  .price { font-size: 38px; font-weight: 800; letter-spacing: -0.02em; }
+  @media (max-width: 720px) { .feats, .plans { grid-template-columns: 1fr; } }
+  details { border-bottom: 1px solid var(--line); padding: 12px 0; } summary { font-weight: 600; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><a class="logo" href="./">opna<span>co</span></a><nav><a href="#pricing">Pricing</a><a href="#faq">FAQ</a><a class="btn primary sm" href="app.html">Create invoice</a></nav></header>
+
+  <section class="hero">
+    <span class="pill">No signup · No fees · No server</span>
+    <h1>Crypto invoices that know when they're paid.</h1>
+    <p>Make a professional USDC invoice in a minute, send the link, and watch it flip to <b>Paid</b> the moment the transfer lands on-chain. Your client pays from any wallet — we never touch the money.</p>
+    <a class="btn primary" href="app.html">Create a free invoice →</a>
+    <a class="btn" href="#how">How it works</a>
+  </section>
+
+  <section class="feats" id="how">
+    <div class="card"><h3>1 · Fill it in</h3><p>Your details, client, line items, due date. Everything stays in your browser.</p></div>
+    <div class="card"><h3>2 · Share one link</h3><p>The whole invoice is encoded in the link. Your client sees a clean invoice, a QR code, and a one-click “Pay with wallet” button.</p></div>
+    <div class="card"><h3>3 · Paid, verified</h3><p>Each invoice carries a unique amount fingerprint, so the page can find its exact payment on-chain and show the transaction as proof.</p></div>
+  </section>
+
+  <section id="pricing">
+    <h2>Pricing</h2>
+    <div class="plans">
+      <div class="card">
+        <div class="muted">Free</div><div class="price">$0</div>
+        <ul><li>Unlimited USDC invoices on Base</li><li>Shareable pay links + QR code</li><li>Automatic on-chain payment detection</li><li>Print / save as PDF</li><li>Local invoice history</li></ul>
+        <a class="btn" href="app.html">Start free</a>
+      </div>
+      <div class="card" style="border-color: var(--accent)">
+        <div class="muted">Pro · lifetime</div><div class="price">29 USDC <span class="muted" style="font-size:16px;font-weight:500">one-time</span></div>
+        <ul><li>Everything in Free</li><li>Arbitrum, Optimism, Polygon & Ethereum</li><li>Your logo on invoices</li><li>No “Made with opnaco” footer</li><li>Saved clients</li><li>CSV export of all invoices for accounting & tax</li></ul>
+        <a class="btn primary" href="app.html#pro">Get Pro</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq" style="margin-top:50px">
+    <h2>FAQ</h2>
+    <details><summary>Do you hold or route my funds?</summary><p class="muted">No. Payments go straight from your client's wallet to yours. opnaco is a static web page; there is no backend that could touch money or data.</p></details>
+    <details><summary>Where is my invoice stored?</summary><p class="muted">In the link itself (compressed into the URL fragment, which browsers never send to servers) and in your browser's local storage for your history.</p></details>
+    <details><summary>How does it detect payment?</summary><p class="muted">Every invoice amount gets a tiny unique fingerprint in its last decimals (e.g. 1,500.003417 USDC). The page asks a public RPC node for USDC transfers to your address since the invoice was created and matches that exact amount.</p></details>
+    <details><summary>How does Pro work without an account?</summary><p class="muted">Send 29 USDC to the opnaco treasury from any wallet, then paste the transaction hash. The app verifies it on-chain and unlocks Pro in that browser. Keep the hash — it's your license and works on any device.</p></details>
+    <details><summary>Which tokens?</summary><p class="muted">Native USDC (Circle) on Base, Arbitrum, Optimism, Polygon and Ethereum.</p></details>
+  </section>
+
+  <footer class="foot">opnaco · open, serverless crypto invoicing · <a href="https://github.com/">source</a></footer>
+</div>
+</body>
+</html>
