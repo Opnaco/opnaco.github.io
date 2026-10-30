@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How to Invoice a Client in USDC (Step by Step, 2026) — opnaco</title>
+<meta name="description" content="A practical guide for freelancers and contractors: how to invoice in USDC, pick a network, avoid wrong-chain payments, prove payment, and keep records for tax.">
+<link rel="canonical" href="https://opnaco.github.io/guides/how-to-invoice-in-usdc.html">
+<link rel="stylesheet" href="../style.css">
+<style>article { max-width: 720px; } article h2 { margin-top: 36px; } article li { margin: 6px 0; } .cta { margin: 30px 0; }</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><a class="logo" href="../">opna<span>co</span></a><nav><a href="./">Guides</a><a class="btn primary sm" href="../app.html">Create invoice</a></nav></header>
+  <article>
+    <h1>How to invoice a client in USDC</h1>
+    <p class="muted">For freelancers, contractors and DAO contributors who want to be paid in stablecoins without confusion over networks, amounts or proof.</p>
+
+    <h2>1. Agree on the network before you send anything</h2>
+    <p>USDC exists on many blockchains. The same wallet address works on all EVM networks (Ethereum, Base, Arbitrum, Optimism, Polygon), but a payment sent on one network does not appear on another. Most lost or "missing" stablecoin payments are a network mismatch, not theft.</p>
+    <ul>
+      <li><b>Base, Arbitrum, Optimism:</b> fees are usually a few cents. Good default for most invoices.</li>
+      <li><b>Polygon:</b> also cheap; make sure it's <i>native</i> USDC, not the older bridged USDC.e.</li>
+      <li><b>Ethereum mainnet:</b> highest fees; only worth it for large amounts or if your client insists.</li>
+    </ul>
+    <p>Write the network on the invoice in plain words, e.g. "USDC on Base (chain ID 8453)".</p>
+
+    <h2>2. Put the right details on the invoice</h2>
+    <ul>
+      <li>Your name or business, and contact details</li>
+      <li>Client name and billing details</li>
+      <li>Invoice number, issue date and due date</li>
+      <li>Line items with quantities and prices</li>
+      <li>Total in USDC, the network, and your receiving address</li>
+      <li>Terms, e.g. "payable within 14 days"</li>
+    </ul>
+    <p>Many jurisdictions also require a tax ID or VAT details. Check your local rules.</p>
+
+    <h2>3. Make the payment easy to identify</h2>
+    <p>If two clients both pay you 500 USDC in the same week, which payment is which? A common trick is to add a small unique fingerprint to the amount, e.g. 500.0037 instead of 500.00. The cost is a fraction of a cent, and the transaction becomes unambiguous.</p>
+
+    <h2>4. Let the client pay without copy-paste mistakes</h2>
+    <p>Typing a 42-character address by hand is risky. Offer a QR code (EIP-681 payment links work with most mobile wallets) or a "pay with wallet" button that fills in the token, network, address and amount automatically.</p>
+
+    <h2>5. Confirm payment on-chain, not by screenshot</h2>
+    <p>A screenshot of a wallet's "sent" screen proves nothing. Look up the transaction hash on a block explorer (Basescan, Arbiscan, Etherscan…) and check the token, amount, recipient and status. Save the hash with the invoice: it's your permanent proof of payment.</p>
+
+    <h2>6. Keep records for tax</h2>
+    <p>Record the date received, the USDC amount, the fiat value on that day and the transaction hash for every invoice. A CSV export of invoices with their transaction hashes is enough for most accountants.</p>
+
+    <div class="card cta">
+      <h3 style="margin-top:0">Do all of this automatically</h3>
+      <p class="muted">opnaco makes a USDC invoice with the network spelled out, a unique amount fingerprint, a QR code and a pay button. The invoice link checks the blockchain itself and shows <b>Paid</b> with the transaction hash. Free, no signup.</p>
+      <a class="btn primary" href="../app.html">Create a USDC invoice →</a>
+    </div>
+  </article>
+  <footer class="foot"><a href="../">opnaco</a> · Support: <a href="mailto:opnaco@proton.me">opnaco@proton.me</a></footer>
+</div>
+</body>
+</html>

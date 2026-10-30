@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Client Says They Sent USDC but You Didn't Receive It? A Checklist — opnaco</title>
+<meta name="description" content="Missing USDC payment? Check the network, token contract, recipient address and transaction status. A step-by-step checklist for freelancers waiting on a stablecoin payment.">
+<link rel="canonical" href="https://opnaco.github.io/guides/usdc-payment-not-received.html">
+<link rel="stylesheet" href="../style.css">
+<style>article { max-width: 720px; } article h2 { margin-top: 36px; } article li { margin: 6px 0; } .cta { margin: 30px 0; }</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><a class="logo" href="../">opna<span>co</span></a><nav><a href="./">Guides</a><a class="btn primary sm" href="../app.html">Create invoice</a></nav></header>
+  <article>
+    <h1>Client says they sent USDC, but it's not in your wallet</h1>
+    <p class="muted">Before anyone panics: almost every "missing" stablecoin payment is one of the five cases below. Ask your client for the <b>transaction hash</b> first; everything else follows from it.</p>
+
+    <h2>1. Wrong network</h2>
+    <p>The most common cause by far. Your client sent USDC on Ethereum but your wallet is showing Base, or the reverse. Your address is the same on every EVM network, so the funds are there, just on another chain.</p>
+    <p><b>Fix:</b> paste the transaction hash into Blockscan (blockscan.com), which searches all major explorers. Then switch your wallet to that network. Nothing is lost.</p>
+
+    <h2>2. Wrong token (bridged vs native USDC)</h2>
+    <p>On Polygon, Arbitrum and Optimism there is native USDC and an older bridged version (USDC.e). Wallets often show only one by default.</p>
+    <p><b>Fix:</b> on the explorer, click the token in the transaction and note its contract address, then add that token to your wallet. You can swap USDC.e to native USDC on most DEXs for a small fee.</p>
+
+    <h2>3. Transaction still pending or failed</h2>
+    <p>On the explorer, check the status. "Pending" usually means the gas fee was too low and it will either confirm or be dropped. "Failed" means no tokens moved, though the sender still paid gas.</p>
+    <p><b>Fix:</b> pending: wait or ask the client to speed it up in their wallet. Failed: ask them to resend.</p>
+
+    <h2>4. Sent to the wrong address</h2>
+    <p>Compare the recipient on the explorer with your address character by character, not just the first and last few. Address-poisoning scams plant look-alike addresses in a victim's history.</p>
+    <p><b>Fix:</b> if it's a different address, the funds went to whoever controls it. Only that party can return them. This is why QR codes and pay buttons beat copy-paste.</p>
+
+    <h2>5. Sent from an exchange that hasn't processed it</h2>
+    <p>Exchange withdrawals can sit in a queue for minutes to hours, and the client sees "sent" before anything is on-chain.</p>
+    <p><b>Fix:</b> ask for the on-chain transaction hash. If the exchange doesn't show one yet, it hasn't been sent.</p>
+
+    <h2>Prevent it next time</h2>
+    <ul>
+      <li>Put the network and chain ID on the invoice in plain words.</li>
+      <li>Give the client a QR code or pay button instead of an address to copy.</li>
+      <li>Use an amount with a unique fingerprint so you can spot the exact payment.</li>
+      <li>Let the invoice confirm payment itself, with the transaction hash, so nobody has to ask.</li>
+    </ul>
+
+    <div class="card cta">
+      <h3 style="margin-top:0">Invoices that check themselves</h3>
+      <p class="muted">opnaco invoice links spell out the network, include a QR code and pay button, and show <b>Paid</b> with the transaction hash as soon as the exact payment lands. Free, no signup.</p>
+      <a class="btn primary" href="../app.html">Create a USDC invoice →</a>
+    </div>
+  </article>
+  <footer class="foot"><a href="../">opnaco</a> · Support: <a href="mailto:opnaco@proton.me">opnaco@proton.me</a></footer>
+</div>
+</body>
+</html>
