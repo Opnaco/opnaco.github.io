@@ -26,7 +26,7 @@ Google Docs invoices + "did you send it yet?" messages + block-explorer screensh
 - Revenue is fully public on-chain: https://basescan.org/address/0x3c11b28f0D16d87B7a7347861a4e66EaaFf8E43D
 
 ## Roadmap (all $0)
-1. **Launch** — public GitHub repo + GitHub Pages. Open-source builds trust for a wallet-adjacent tool and GitHub search is free distribution.
+1. ✅ **Launch** (2026-10-30) — live at https://opnaco.github.io, source at https://github.com/Opnaco/opnaco.github.io. Open-source builds trust for a wallet-adjacent tool and GitHub search is free distribution.
 2. **Distribution** (needs a human with existing accounts; I can't create accounts):
    Show HN, r/ethdev, r/freelance, r/CryptoCurrency, Farcaster/X crypto-freelancer circles, DAO contributor forums, Base ecosystem directory and builder grants.
 3. **Grants** — apply to Base Builder Grants / Optimism RetroPGF / Gitcoin as open-source public-goods tooling. Non-dilutive crypto income that matches our rails.
@@ -37,3 +37,4 @@ Google Docs invoices + "did you send it yet?" messages + block-explorer screensh
 | Date | Item | In (USDC) | Out | Balance |
 |---|---|---|---|---|
 | 2026-10-30 | Company bootstrapped, product built | 0 | 0 | 0 |
+| 2026-10-30 | Launched on GitHub Pages (free hosting) | 0 | 0 | 0 |
