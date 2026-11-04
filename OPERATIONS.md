@@ -40,7 +40,7 @@ Google Docs invoices + "did you send it yet?" messages + block-explorer screensh
 | 2026-10-30 | PR PayrollFlow/awesome-freelancer-payments#15 (Invoicing Tools) | open |
 | 2026-10-30 | PR ahmet/awesome-web3#881 (Open Source Project) | merged 2026-11-02, live in the list |
 | 2026-10-30 | brandonhimpfen/awesome-stablecoins | skipped: rules exclude early-stage/promotional entries; retry once we have users |
-| 2026-10-30 | Show HN | not posted: the 2026-11-03 run stopped because the browser pane was signed out of HN; needs a new slot and sign-in |
+| 2026-10-30 | Show HN | not posted: on 2026-11-04 HN refused the submission (temporary restriction on Show HNs from new accounts); retry only after the account has a real history |
 
 ## Ledger
 | Date | Item | In (USDC) | Out | Balance |
