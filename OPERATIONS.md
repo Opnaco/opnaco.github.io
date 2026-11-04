@@ -38,9 +38,9 @@ Google Docs invoices + "did you send it yet?" messages + block-explorer screensh
 |---|---|---|
 | 2026-10-30 | SEO guides: how-to-invoice-in-usdc, usdc-payment-not-received + sitemap | live |
 | 2026-10-30 | PR PayrollFlow/awesome-freelancer-payments#15 (Invoicing Tools) | open |
-| 2026-10-30 | PR ahmet/awesome-web3#881 (Open Source Project) | open |
+| 2026-10-30 | PR ahmet/awesome-web3#881 (Open Source Project) | merged 2026-11-02, live in the list |
 | 2026-10-30 | brandonhimpfen/awesome-stablecoins | skipped: rules exclude early-stage/promotional entries; retry once we have users |
-| 2026-10-30 | Show HN | drafted (drafts/, private); HN account `opnaco` created by the human; post planned for Tue 2026-11-03 ~9am ET |
+| 2026-10-30 | Show HN | not posted: the 2026-11-03 run stopped because the browser pane was signed out of HN; needs a new slot and sign-in |
 
 ## Ledger
 | Date | Item | In (USDC) | Out | Balance |
